@@ -1,0 +1,23 @@
+{
+  "name": "sonarr-stream-catalog",
+  "version": "1.0.0",
+  "description": "Netflix-style local web app for browsing a Sonarr catalog by categories, series, seasons, and episodes.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "check": "node --check index.js"
+  },
+  "keywords": [
+    "sonarr",
+    "streaming",
+    "catalog",
+    "video"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  }
+}
