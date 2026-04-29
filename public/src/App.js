@@ -1,10 +1,9 @@
 import React from 'react';
 import { h } from './helpers/react.js';
 import { fetchCatalog, fetchEpisodes } from './helpers/api.js';
-import { buildCategoryList, filterSeries, pickHeroSeries } from './helpers/catalog.js';
+import { buildCategoryList, filterSeries } from './helpers/catalog.js';
 import { plural } from './helpers/format.js';
 import { Header } from './components/Header.js';
-import { Hero } from './components/Hero.js';
 import { PlayerDialog } from './components/PlayerDialog.js';
 import { Sidebar } from './components/Sidebar.js';
 import { EpisodesPage } from './pages/EpisodesPage.js';
@@ -29,7 +28,6 @@ export function App() {
     () => buildCategoryList(catalog.series, catalog.categories),
     [catalog]
   );
-  const heroSeries = pickHeroSeries(catalog.series, selectedSeries);
 
   React.useEffect(() => {
     loadCatalog();
@@ -46,7 +44,7 @@ export function App() {
       };
 
       setCatalog(nextCatalog);
-      setSelectedSeries(pickHeroSeries(nextCatalog.series, null));
+      setSelectedSeries(null);
     } catch (error) {
       setCatalog({ series: [], categories: [] });
       setSelectedSeries(null);
@@ -125,7 +123,6 @@ export function App() {
     h(
       'main',
       null,
-      h(Hero, { series: heroSeries, onOpenSeries: openSeries, onRefresh: loadCatalog }),
       notice ? h('section', { className: 'notice', role: 'status' }, notice) : null,
       h(
         'section',

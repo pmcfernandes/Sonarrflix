@@ -16,7 +16,7 @@ export function EpisodesPage({ error, loading, seasons, series, onPlay }) {
 
   const seasonNumbers = Object.keys(seasons)
     .map(Number)
-    .sort((a, b) => a - b);
+    .sort((a, b) => b - a);
 
   return h(
     'div',
@@ -32,9 +32,22 @@ export function EpisodesPage({ error, loading, seasons, series, onPlay }) {
 }
 
 function SeriesDetail({ series }) {
+  const backgroundImage = series.backdrop || series.poster;
+
   return h(
     'section',
-    { className: 'series-detail' },
+    {
+      className: 'series-detail',
+      style: backgroundImage
+        ? {
+            backgroundImage: `
+              linear-gradient(90deg, rgba(8, 9, 13, 0.98), rgba(8, 9, 13, 0.82) 48%, rgba(8, 9, 13, 0.58)),
+              linear-gradient(0deg, rgba(8, 9, 13, 0.98), rgba(8, 9, 13, 0.38) 62%, rgba(8, 9, 13, 0.18)),
+              url("${backgroundImage}")
+            `
+          }
+        : undefined
+    },
     h(
       'div',
       { className: 'poster' },
@@ -67,7 +80,10 @@ function Season({ episodes, onPlay, seasonNumber }) {
     h(
       'div',
       { className: 'episode-list' },
-      episodes.map((episode) => h(EpisodeRow, { key: episode.id, episode, onPlay }))
+      episodes
+        .slice()
+        .sort((a, b) => b.episodeNumber - a.episodeNumber)
+        .map((episode) => h(EpisodeRow, { key: episode.id, episode, onPlay }))
     )
   );
 }

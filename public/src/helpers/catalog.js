@@ -1,15 +1,3 @@
-export function pickHeroSeries(series, selectedSeries) {
-  if (selectedSeries) {
-    return selectedSeries;
-  }
-
-  const candidates = series
-    .filter((item) => item.backdrop || item.poster)
-    .sort((a, b) => b.episodeFileCount - a.episodeFileCount || b.rating - a.rating);
-
-  return candidates[0] || series[0] || null;
-}
-
 export function buildCategoryList(series, categories) {
   return [
     { name: 'All Series', count: series.length },
