@@ -5,69 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Sonarr Stream</title>
     <link rel="stylesheet" href="/styles.css">
-    <script src="/app.js" defer></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@18.3.1",
+          "react-dom/client": "https://esm.sh/react-dom@18.3.1/client"
+        }
+      }
+    </script>
+    <script type="module" src="/src/main.js"></script>
   </head>
   <body>
-    <header class="topbar">
-      <button class="brand" type="button" data-action="home" aria-label="Home">
-        <span class="brand-mark">S</span>
-        <span>Sonarr Stream</span>
-      </button>
-      <nav class="tabs" aria-label="Catalog views">
-        <button class="tab active" type="button" data-view="home">Home</button>
-        <button class="tab" type="button" data-view="series">Series</button>
-        <button class="tab" type="button" data-view="episodes">Episodes</button>
-      </nav>
-      <label class="search">
-        <span class="search-icon" aria-hidden="true">⌕</span>
-        <input id="searchInput" type="search" placeholder="Search series" autocomplete="off">
-      </label>
-    </header>
-
-    <main>
-      <section class="hero" id="hero">
-        <div class="hero-shade"></div>
-        <div class="hero-content">
-          <p class="eyebrow" id="heroMeta">Loading catalog</p>
-          <h1 id="heroTitle">Sonarr Stream</h1>
-          <p id="heroOverview">Connect your Sonarr API key to browse categories, series, seasons, and episodes from your own catalog.</p>
-          <div class="hero-actions">
-            <button class="primary-button" type="button" id="heroOpen">Open Series</button>
-            <button class="secondary-button" type="button" id="refreshButton">Refresh</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="notice hidden" id="notice" role="status"></section>
-
-      <section class="layout">
-        <aside class="sidebar" aria-label="Categories">
-          <h2>Categories</h2>
-          <div class="category-list" id="categoryList"></div>
-        </aside>
-
-        <section class="content">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow" id="viewMeta">Catalog</p>
-              <h2 id="viewTitle">Browse</h2>
-            </div>
-            <div class="counter" id="counter">0 series</div>
-          </div>
-
-          <div class="rows" id="rows"></div>
-          <div class="series-grid hidden" id="seriesGrid"></div>
-          <div class="episode-view hidden" id="episodeView"></div>
-        </section>
-      </section>
-    </main>
-
-    <dialog class="player-dialog" id="playerDialog">
-      <div class="player-shell">
-        <button class="close-button" type="button" id="closePlayer" aria-label="Close player">×</button>
-        <video id="videoPlayer" controls playsinline></video>
-        <p id="playerTitle"></p>
-      </div>
-    </dialog>
+    <div id="root"></div>
   </body>
 </html>

@@ -7,6 +7,7 @@ Local Node.js app for browsing a Sonarr catalog in a Netflix-style interface.
 - Home view with category rails.
 - Series grid with search.
 - Series detail view grouped by season and episode.
+- React frontend organized into pages, components, and helpers.
 - Sonarr poster/fanart image proxy.
 - Optional episode playback through `/watch/:episodeId` when the Sonarr file path is readable by this machine and the browser supports the video format.
 
@@ -38,6 +39,19 @@ Open:
 ```text
 http://localhost:3000
 ```
+
+## Frontend Structure
+
+The browser app lives in `public/src`:
+
+```text
+public/src/App.js
+public/src/components/
+public/src/helpers/
+public/src/pages/
+```
+
+React is loaded through the import map in `public/index.html`, so the app does not need a local frontend build step yet. A later move to Vite can keep the same folder structure.
 
 ## Playback Notes
 
