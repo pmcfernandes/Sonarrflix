@@ -1,12 +1,14 @@
-# Sonarr Stream Catalog
+# Sonarrflix
 
-Local Node.js app for browsing a Sonarr catalog in a Netflix-style interface.
+Local Node.js app for browsing and play Sonarr and Radarr catalogs in a Netflix-style interface.
 
 ## Features
 
 - Home view with category rails.
 - Series grid with search.
+- Movies grid with search.
 - Series detail view grouped by season and episode.
+- Radarr movie playback through the same web player.
 - React frontend organized into pages, components, and helpers.
 - Sonarr poster/fanart image proxy.
 - Optional episode playback through `/watch/:episodeId` when the Sonarr file path is readable by this machine and the browser supports the video format.
@@ -20,7 +22,7 @@ PORT=3000
 MEDIA_PATH_MAPPINGS=/media=Z:/
 ```
 
-Sonarr URL and API key are configured in the app Settings page and saved to SQLite at `data/app.sqlite`.
+Sonarr and Radarr URLs/API keys are configured in the app Settings page and saved to SQLite at `data/app.sqlite`.
 
 Find the API key in Sonarr:
 
@@ -41,7 +43,7 @@ Open:
 http://localhost:3000
 ```
 
-On first run, or when Sonarr cannot be reached with the saved settings, the app opens Settings instead of Home.
+On first run, or when neither Sonarr nor Radarr can be reached with the saved settings, the app opens Settings instead of Home.
 
 ## Frontend Structure
 
@@ -63,5 +65,3 @@ Sonarr is a catalog manager, not a streaming server. This app can stream a file 
 - Sonarr returns an episode file path.
 - The Node app runs on a machine that can read that path.
 - The file extension is a browser-friendly video type such as `.mp4` or `.webm`.
-
-Many `.mkv` files will not play directly in some browsers. For a stronger media server experience, use this as the catalog layer and pair playback with Jellyfin, Plex, or transcoding later.

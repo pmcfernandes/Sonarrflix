@@ -135,21 +135,35 @@ function streamSubtitle(req, res, videoPath, subtitleId) {
   });
 }
 
-function streamTranscodedVideo(req, res, filePath) {
+function streamTranscodedVideo(req, res, filePath, durationInSeconds = 0) {
+  const stat = fs.statSync(filePath);
+  const fileSize = stat.size;
+  const range = req.headers.range;
+  
+  let startByte = 0;
+  let endByte = fileSize - 1;
+  let startTime = 0;
+
+  if (range && durationInSeconds > 0) {
+    const [startText, endText] = range.replace(/bytes=/, '').split('-');
+    startByte = Number.parseInt(startText, 10);
+    if (endText) endByte = Number.parseInt(endText, 10);
+    if (!Number.isNaN(startByte) && startByte > 0) {
+      startTime = Math.floor((startByte / fileSize) * durationInSeconds);
+    }
+  }
+
   const ffmpeg = spawn('ffmpeg', [
     '-hide_banner',
     '-loglevel', 'error',
-    '-ss', '0',
+    '-ss', String(startTime),
     '-i', filePath,
     '-map', '0:v:0',
     '-map', '0:a?',
-    '-c:v', 'libx264',
-    '-preset', 'veryfast',
-    '-crf', '23',
+    '-c:v', 'copy',
     '-c:a', 'aac',
     '-b:a', '160k',
-    '-movflags', 'frag_keyframe+empty_moov+default_base_moof',
-    '-f', 'mp4',
+    '-f', 'matroska',
     'pipe:1'
   ], {
     windowsHide: true,
@@ -157,30 +171,29 @@ function streamTranscodedVideo(req, res, filePath) {
   });
 
   let stderr = '';
-
-  ffmpeg.stderr.on('data', (chunk) => {
-    stderr += chunk.toString();
-  });
+  ffmpeg.stderr.on('data', (chunk) => stderr += chunk.toString());
 
   ffmpeg.once('error', () => {
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'ffmpeg is not available to transcode this episode.' });
-    }
+    if (!res.headersSent) res.status(500).json({ error: 'ffmpeg is not available to transcode this episode.' });
   });
 
   ffmpeg.once('spawn', () => {
-    res.writeHead(200, {
-      'Content-Type': 'video/mp4',
-      'Transfer-Encoding': 'chunked',
-      'Accept-Ranges': 'none',
-      'Cache-Control': 'no-store'
-    });
+    if (range) {
+      res.writeHead(206, {
+        'Content-Range': `bytes ${startByte}-${endByte}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Type': 'video/x-matroska'
+      });
+    } else {
+      res.writeHead(200, {
+        'Content-Length': fileSize,
+        'Content-Type': 'video/x-matroska',
+        'Accept-Ranges': 'bytes'
+      });
+    }
   });
 
-  req.on('close', () => {
-    ffmpeg.kill('SIGKILL');
-  });
-
+  req.on('close', () => ffmpeg.kill('SIGKILL'));
   ffmpeg.stdout.pipe(res);
 
   ffmpeg.once('close', (code) => {
@@ -190,7 +203,7 @@ function streamTranscodedVideo(req, res, filePath) {
   });
 }
 
-function streamVideo(req, res, filePath) {
+function streamVideo(req, res, filePath, durationInSeconds) {
   const resolvedPath = resolveVideoPath(filePath);
   const ext = path.extname(resolvedPath).toLowerCase();
   if (!VIDEO_EXTENSIONS.has(ext)) {
@@ -205,7 +218,7 @@ function streamVideo(req, res, filePath) {
     }
 
     if (!canDirectPlay(resolvedPath)) {
-      streamTranscodedVideo(req, res, resolvedPath);
+      streamTranscodedVideo(req, res, resolvedPath, durationInSeconds);
       return;
     }
 

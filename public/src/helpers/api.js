@@ -30,12 +30,20 @@ export function fetchCatalog() {
   return requestJson('/api/series');
 }
 
+export function fetchMovies() {
+  return requestJson('/api/movies');
+}
+
 export function fetchEpisodes(seriesId) {
   return requestJson(`/api/series/${seriesId}/episodes`);
 }
 
 export function fetchPlayer(episodeId) {
   return requestJson(`/api/player/${episodeId}`);
+}
+
+export function fetchMoviePlayer(movieId) {
+  return requestJson(`/api/movie-player/${movieId}`);
 }
 
 export function fetchSettings() {

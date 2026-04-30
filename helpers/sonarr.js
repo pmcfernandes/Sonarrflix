@@ -36,7 +36,7 @@ function sonarrImageProxyUrl(imagePath) {
     return imagePath;
   }
 
-  return `/api/image?path=${encodeURIComponent(imagePath)}`;
+  return `/api/image?source=sonarr&path=${encodeURIComponent(imagePath)}`;
 }
 
 function buildSonarrAssetUrl(assetPath) {

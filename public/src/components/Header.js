@@ -4,7 +4,7 @@ export function Header({ activeView, search, onHome, onSearch, onViewChange }) {
   const tabs = [
     ['home', 'Home'],
     ['series', 'Series'],
-    ['episodes', 'Episodes'],
+    ['movies', 'Movies'],
     ['settings', 'Settings']
   ];
 
@@ -15,7 +15,7 @@ export function Header({ activeView, search, onHome, onSearch, onViewChange }) {
       'button',
       { className: 'brand', type: 'button', onClick: onHome, 'aria-label': 'Home' },
       h('span', { className: 'brand-mark' }, 'S'),
-      h('span', null, 'Sonarr Stream')
+      h('span', null, 'Sonarrflix')
     ),
     h(
       'nav',
@@ -37,7 +37,7 @@ export function Header({ activeView, search, onHome, onSearch, onViewChange }) {
       h('span', { className: 'search-icon', 'aria-hidden': true }, '/'),
       h('input', {
         type: 'search',
-        placeholder: 'Search series',
+        placeholder: 'Search series or movies',
         autoComplete: 'off',
         value: search,
         onChange: (event) => onSearch(event.target.value)

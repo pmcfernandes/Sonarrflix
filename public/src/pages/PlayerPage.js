@@ -1,10 +1,10 @@
 import React from 'react';
 import Plyr from 'plyr';
-import { fetchPlayer } from '../helpers/api.js';
+import { fetchMoviePlayer, fetchPlayer } from '../helpers/api.js';
 import { episodeCode } from '../helpers/format.js';
 import { h } from '../helpers/react.js';
 
-export function PlayerPage({ episodeId }) {
+export function PlayerPage({ episodeId, movieId, type = 'episode' }) {
   const playerRef = React.useRef(null);
   const shellRef = React.useRef(null);
   const [captionScale, setCaptionScale] = React.useState(1);
@@ -18,7 +18,9 @@ export function PlayerPage({ episodeId }) {
     setLoading(true);
     setError('');
 
-    fetchPlayer(episodeId)
+    const request = type === 'movie' ? fetchMoviePlayer(movieId) : fetchPlayer(episodeId);
+
+    request
       .then((payload) => {
         if (!cancelled) {
           setPlayerData(payload);
@@ -35,15 +37,19 @@ export function PlayerPage({ episodeId }) {
     return () => {
       cancelled = true;
     };
-  }, [episodeId]);
+  }, [episodeId, movieId, type]);
 
   React.useEffect(() => {
     if (!playerRef.current || !playerData) {
       return undefined;
     }
 
-    const storageKey = `sonarr-stream-position:${episodeId}`;
+    const mediaId = type === 'movie' ? movieId : episodeId;
+    const storageKey = `sonarr-stream-position:${type}:${mediaId}`;
     const player = new Plyr(playerRef.current, {
+      duration: type === 'movie'
+        ? (playerData.movie?.fileRuntime || playerData.movie?.runtime * 60 || 0)
+        : (playerData.episode?.fileRuntime || playerData.episode?.runtime * 60 || playerData.series?.runtime * 60 || 0),
       captions: {
         active: false,
         language: 'auto',
@@ -93,7 +99,7 @@ export function PlayerPage({ episodeId }) {
     return () => {
       player.destroy();
     };
-  }, [episodeId, playerData]);
+  }, [episodeId, movieId, playerData, type]);
 
   React.useEffect(() => {
     if (!shellRef.current) {
@@ -123,8 +129,9 @@ export function PlayerPage({ episodeId }) {
     return h('main', { className: 'player-page' }, h('div', { className: 'player-status' }, error));
   }
 
-  const { episode, seasonEpisodes = [], series, suggestedSeries = [], subtitles = [] } = playerData;
-  const title = `${episodeCode(episode)} / ${episode.title}`;
+  const { episode, movie, seasonEpisodes = [], series, suggestedMovies = [], suggestedSeries = [], subtitles = [] } = playerData;
+  const isMovie = type === 'movie';
+  const title = isMovie ? `${movie.title} (${movie.year || 'Movie'})` : `${episodeCode(episode)} / ${episode.title}`;
 
   function openEpisode(nextEpisode) {
     window.location.assign(`/player/${nextEpisode.id}`);
@@ -132,6 +139,10 @@ export function PlayerPage({ episodeId }) {
 
   function openSeries(nextSeries) {
     window.location.assign(`/?seriesId=${nextSeries.id}`);
+  }
+
+  function openMovie(nextMovie) {
+    window.location.assign(`/movie-player/${nextMovie.id}`);
   }
 
   function changeCaptionSize(step) {
@@ -173,7 +184,7 @@ export function PlayerPage({ episodeId }) {
       h(
         'div',
         null,
-        h('p', { className: 'eyebrow' }, series?.title || 'Now Playing'),
+        h('p', { className: 'eyebrow' }, isMovie ? 'Movie' : series?.title || 'Now Playing'),
         h('h1', null, title)
       )
     ),
@@ -182,7 +193,7 @@ export function PlayerPage({ episodeId }) {
       { className: 'player-stage' },
       h(
         'div',
-        { className: 'player-layout' },
+        { className: `player-layout ${isMovie ? 'movie-player-layout' : ''}`.trim() },
         h(
           'div',
           { className: 'player-shell', ref: shellRef },
@@ -191,7 +202,7 @@ export function PlayerPage({ episodeId }) {
             {
               ref: playerRef,
               className: 'player-video',
-              src: `/watch/${episodeId}`,
+              src: isMovie ? `/watch/movie/${movieId}` : `/watch/${episodeId}`,
               controls: true,
               playsInline: true,
               autoPlay: true,
@@ -216,7 +227,7 @@ export function PlayerPage({ episodeId }) {
           h('button', { type: 'button', onClick: () => changeCaptionSize(-0.1), 'aria-label': 'Decrease subtitle size' }, 'A-'),
           h('button', { type: 'button', onClick: () => changeCaptionSize(0.1), 'aria-label': 'Increase subtitle size' }, 'A+')
         ),
-        seasonEpisodes.length
+        !isMovie && seasonEpisodes.length
           ? h(
               'aside',
               { className: 'player-sidebar' },
@@ -246,19 +257,19 @@ export function PlayerPage({ episodeId }) {
               )
             )
           : null,
-        suggestedSeries.length
+        (isMovie ? suggestedMovies : suggestedSeries).length
           ? h(
               'section',
               { className: 'player-suggestions' },
               h('p', { className: 'eyebrow' }, 'Based on categories'),
-              h('h2', null, 'Suggested series'),
+              h('h2', null, isMovie ? 'Suggested movies' : 'Suggested series'),
               h(
                 'div',
                 { className: 'player-suggestion-list' },
-                suggestedSeries.map((suggestion) => h(SuggestionCard, {
+                (isMovie ? suggestedMovies : suggestedSeries).map((suggestion) => h(SuggestionCard, {
                   key: suggestion.id,
                   series: suggestion,
-                  onOpen: openSeries
+                  onOpen: isMovie ? openMovie : openSeries
                 }))
               )
             )
@@ -286,9 +297,9 @@ function SuggestionCard({ series, onOpen }) {
     h(
       'div',
       { className: 'player-suggestion-copy' },
-      h('span', { className: 'player-suggestion-code' }, series.genres.slice(0, 3).join(' / ') || 'Series'),
+      h('span', { className: 'player-suggestion-code' }, series.genres.slice(0, 3).join(' / ') || (series.hasFile === undefined ? 'Series' : 'Movie')),
       h('strong', null, series.title),
-      h('span', null, series.overview || `${series.episodeFileCount} episodes available.`)
+      h('span', null, series.overview || (series.hasFile === undefined ? `${series.episodeFileCount} episodes available.` : `${series.year || 'Movie'} / ${series.hasFile ? 'Ready' : 'Missing'}`))
     )
   );
 }

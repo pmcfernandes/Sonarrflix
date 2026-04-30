@@ -31,17 +31,23 @@ function setSetting(key, value) {
 function getSettings() {
   const sonarrUrl = normalizeBaseUrl(getSetting('sonarrUrl'));
   const sonarrApiKey = getSetting('sonarrApiKey');
+  const radarrUrl = normalizeBaseUrl(getSetting('radarrUrl'));
+  const radarrApiKey = getSetting('radarrApiKey');
 
   return {
-    configured: Boolean(sonarrUrl && sonarrApiKey.trim()),
+    configured: Boolean((sonarrUrl && sonarrApiKey.trim()) || (radarrUrl && radarrApiKey.trim())),
     sonarrUrl,
-    sonarrApiKey
+    sonarrApiKey,
+    radarrUrl,
+    radarrApiKey
   };
 }
 
 function saveSettings(settings) {
   setSetting('sonarrUrl', normalizeBaseUrl(settings.sonarrUrl));
   setSetting('sonarrApiKey', settings.sonarrApiKey);
+  setSetting('radarrUrl', normalizeBaseUrl(settings.radarrUrl));
+  setSetting('radarrApiKey', settings.radarrApiKey);
   return getSettings();
 }
 

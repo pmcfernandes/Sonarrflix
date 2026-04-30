@@ -1,17 +1,26 @@
 import React from 'react';
 import { h } from './helpers/react.js';
-import { fetchCatalog, fetchEpisodes, fetchSettings } from './helpers/api.js';
-import { buildCategoryList, filterSeries } from './helpers/catalog.js';
+import { fetchCatalog, fetchEpisodes, fetchMovies, fetchSettings } from './helpers/api.js';
+import { buildCategoryList, filterMovies, filterSeries } from './helpers/catalog.js';
 import { plural } from './helpers/format.js';
 import { Header } from './components/Header.js';
 import { Sidebar } from './components/Sidebar.js';
 import { EpisodesPage } from './pages/EpisodesPage.js';
 import { HomePage } from './pages/HomePage.js';
+import { MoviesPage } from './pages/MoviesPage.js';
 import { PlayerPage } from './pages/PlayerPage.js';
 import { SettingsPage } from './pages/SettingsPage.js';
 import { SeriesPage } from './pages/SeriesPage.js';
 
 function getPlayerRoute() {
+  const movieMatch = window.location.pathname.match(/^\/movie-player\/(\d+)/);
+  if (movieMatch) {
+    return {
+      movieId: movieMatch[1],
+      type: 'movie'
+    };
+  }
+
   const match = window.location.pathname.match(/^\/player\/(\d+)/);
   if (!match) {
     return null;
@@ -23,7 +32,8 @@ function getPlayerRoute() {
   return {
     episodeId: match[1],
     title,
-    seriesId
+    seriesId,
+    type: 'episode'
   };
 }
 
@@ -36,6 +46,7 @@ export function App() {
   const [activeCategory, setActiveCategory] = React.useState('All Series');
   const [activeView, setActiveView] = React.useState('home');
   const [catalog, setCatalog] = React.useState({ series: [], categories: [] });
+  const [movieCatalog, setMovieCatalog] = React.useState({ movies: [], categories: [] });
   const [episodeState, setEpisodeState] = React.useState({ loading: false, error: '', seasons: {} });
   const [notice, setNotice] = React.useState('');
   const [search, setSearch] = React.useState('');
@@ -46,9 +57,19 @@ export function App() {
     () => filterSeries(catalog.series, catalog.categories, activeCategory, search),
     [activeCategory, catalog, search]
   );
+  const filteredMovies = React.useMemo(
+    () => filterMovies(movieCatalog.movies, movieCatalog.categories, activeCategory, search),
+    [activeCategory, movieCatalog, search]
+  );
   const categoryList = React.useMemo(
-    () => buildCategoryList(catalog.series, catalog.categories),
-    [catalog]
+    () => activeView === 'movies'
+      ? [
+          { name: 'All Movies', count: movieCatalog.movies.length },
+          { name: 'Available to Watch', count: movieCatalog.movies.filter((item) => item.hasFile).length },
+          ...movieCatalog.categories.map((category) => ({ name: category.name, count: category.count || category.items.length }))
+        ].filter((category, index, list) => list.findIndex((item) => item.name === category.name) === index)
+      : buildCategoryList(catalog.series, catalog.categories),
+    [activeView, catalog, movieCatalog]
   );
 
   React.useEffect(() => {
@@ -69,13 +90,24 @@ export function App() {
         return;
       }
 
-      const payload = await fetchCatalog();
+      const [payload, moviePayload] = await Promise.all([
+        loadedSettings.sonarrConnectionOk ? fetchCatalog().catch(() => ({ series: [], categories: [] })) : Promise.resolve({ series: [], categories: [] }),
+        loadedSettings.radarrConnectionOk ? fetchMovies().catch(() => ({ movies: [], categories: [] })) : Promise.resolve({ movies: [], categories: [] })
+      ]);
       const nextCatalog = {
         series: payload.series || [],
         categories: payload.categories || []
       };
 
       setCatalog(nextCatalog);
+      setMovieCatalog({
+        movies: moviePayload.movies || [],
+        categories: moviePayload.categories || []
+      });
+      if (!loadedSettings.sonarrConnectionOk && loadedSettings.radarrConnectionOk) {
+        setActiveView('movies');
+        setActiveCategory('All Movies');
+      }
       const initialSeriesId = new URLSearchParams(window.location.search).get('seriesId');
       const initialSeries = nextCatalog.series.find((item) => String(item.id) === String(initialSeriesId));
 
@@ -135,7 +167,7 @@ export function App() {
 
   function handleCategoryChange(category) {
     setActiveCategory(category);
-    setActiveView('series');
+    setActiveView(activeView === 'movies' ? 'movies' : 'series');
   }
 
   function handleSearch(value) {
@@ -145,12 +177,30 @@ export function App() {
     }
   }
 
+  function handleViewChange(view) {
+    setActiveView(view);
+    if (view === 'movies') {
+      setActiveCategory('All Movies');
+    }
+    if (view === 'series' || view === 'home') {
+      setActiveCategory('All Series');
+    }
+  }
+
   function openPlayerPage(episode) {
     const params = new URLSearchParams({
       title: episode.title,
       seriesId: String(episode.seriesId)
     });
     window.location.assign(`/player/${episode.id}?${params.toString()}`);
+  }
+
+  function openMoviePlayer(movie) {
+    if (!movie.hasFile) {
+      return;
+    }
+
+    window.location.assign(`/movie-player/${movie.id}`);
   }
 
   function renderPage() {
@@ -173,6 +223,10 @@ export function App() {
       return h(SeriesPage, { series: filtered, onOpenSeries: openSeries });
     }
 
+    if (activeView === 'movies') {
+      return h(MoviesPage, { movies: filteredMovies, onOpenMovie: openMoviePlayer });
+    }
+
     return h(HomePage, {
       categories: catalog.categories,
       series: catalog.series,
@@ -182,6 +236,8 @@ export function App() {
 
   const counter = activeView === 'episodes' && selectedSeries
     ? plural(selectedSeries.episodeFileCount, 'available episode')
+    : activeView === 'movies'
+      ? plural(filteredMovies.length, 'movie')
     : plural(filtered.length, 'series', 'series');
 
   return h(
@@ -190,9 +246,9 @@ export function App() {
     h(Header, {
       activeView,
       search,
-      onHome: () => setActiveView('home'),
+      onHome: () => handleViewChange('home'),
       onSearch: handleSearch,
-      onViewChange: setActiveView
+      onViewChange: handleViewChange
     }),
     h(
       'main',
@@ -220,7 +276,7 @@ export function App() {
                   'div',
                   null,
                   h('p', { className: 'eyebrow' }, activeCategory),
-                  h('h2', null, activeView === 'episodes' && selectedSeries ? selectedSeries.title : activeView === 'home' ? 'Browse' : 'Series')
+                  h('h2', null, activeView === 'episodes' && selectedSeries ? selectedSeries.title : activeView === 'movies' ? 'Movies' : activeView === 'home' ? 'Browse' : 'Series')
                 ),
                 h('div', { className: 'counter' }, counter)
               ),

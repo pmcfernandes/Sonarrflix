@@ -5,7 +5,9 @@ import { h } from '../helpers/react.js';
 export function SettingsPage({ initialSettings, onSaved }) {
   const [form, setForm] = React.useState({
     sonarrUrl: initialSettings?.sonarrUrl || 'http://localhost:8989',
-    sonarrApiKey: initialSettings?.sonarrApiKey || ''
+    sonarrApiKey: initialSettings?.sonarrApiKey || '',
+    radarrUrl: initialSettings?.radarrUrl || 'http://localhost:7878',
+    radarrApiKey: initialSettings?.radarrApiKey || ''
   });
   const [message, setMessage] = React.useState(initialSettings?.connectionError || '');
   const [saving, setSaving] = React.useState(false);
@@ -14,7 +16,9 @@ export function SettingsPage({ initialSettings, onSaved }) {
   React.useEffect(() => {
     setForm({
       sonarrUrl: initialSettings?.sonarrUrl || 'http://localhost:8989',
-      sonarrApiKey: initialSettings?.sonarrApiKey || ''
+      sonarrApiKey: initialSettings?.sonarrApiKey || '',
+      radarrUrl: initialSettings?.radarrUrl || 'http://localhost:7878',
+      radarrApiKey: initialSettings?.radarrApiKey || ''
     });
     setMessage(initialSettings?.connectionError || '');
   }, [initialSettings]);
@@ -63,7 +67,7 @@ export function SettingsPage({ initialSettings, onSaved }) {
       'form',
       { className: 'settings-form', onSubmit: handleSubmit },
       h('p', { className: 'eyebrow' }, 'Application setup'),
-      h('h2', null, 'Sonarr settings'),
+      h('h2', null, 'Media app settings'),
       h(
         'label',
         { className: 'settings-field' },
@@ -72,7 +76,6 @@ export function SettingsPage({ initialSettings, onSaved }) {
           type: 'url',
           value: form.sonarrUrl,
           placeholder: 'http://localhost:8989',
-          required: true,
           onChange: (event) => updateField('sonarrUrl', event.target.value)
         })
       ),
@@ -83,8 +86,28 @@ export function SettingsPage({ initialSettings, onSaved }) {
         h('input', {
           type: 'password',
           value: form.sonarrApiKey,
-          required: true,
           onChange: (event) => updateField('sonarrApiKey', event.target.value)
+        })
+      ),
+      h(
+        'label',
+        { className: 'settings-field' },
+        h('span', null, 'Radarr URL'),
+        h('input', {
+          type: 'url',
+          value: form.radarrUrl,
+          placeholder: 'http://localhost:7878',
+          onChange: (event) => updateField('radarrUrl', event.target.value)
+        })
+      ),
+      h(
+        'label',
+        { className: 'settings-field' },
+        h('span', null, 'Radarr API key'),
+        h('input', {
+          type: 'password',
+          value: form.radarrApiKey,
+          onChange: (event) => updateField('radarrApiKey', event.target.value)
         })
       ),
       message ? h('div', { className: 'settings-message', role: 'status' }, message) : null,

@@ -20,20 +20,30 @@ const config = {
       };
     })
     .filter((mapping) => mapping.from && mapping.to),
-  defaultSonarrUrl: 'http://localhost:8989'
+  defaultSonarrUrl: 'http://localhost:8989',
+  defaultRadarrUrl: 'http://localhost:7878'
 };
 
-function requireSonarrConfig(settings) {
-  if (!settings.sonarrUrl || !settings.sonarrApiKey.trim()) {
+function requireAppConfig(settings, urlKey, apiKeyKey, label) {
+  if (!settings[urlKey] || !settings[apiKeyKey].trim()) {
     const missing = [];
-    if (!settings.sonarrUrl) missing.push('Sonarr URL');
-    if (!settings.sonarrApiKey.trim()) missing.push('Sonarr API key');
-    throw new Error(`Missing Sonarr configuration: ${missing.join(', ')}`);
+    if (!settings[urlKey]) missing.push(`${label} URL`);
+    if (!settings[apiKeyKey].trim()) missing.push(`${label} API key`);
+    throw new Error(`Missing ${label} configuration: ${missing.join(', ')}`);
   }
+}
+
+function requireSonarrConfig(settings) {
+  requireAppConfig(settings, 'sonarrUrl', 'sonarrApiKey', 'Sonarr');
+}
+
+function requireRadarrConfig(settings) {
+  requireAppConfig(settings, 'radarrUrl', 'radarrApiKey', 'Radarr');
 }
 
 module.exports = {
   config,
   normalizeBaseUrl,
+  requireRadarrConfig,
   requireSonarrConfig
 };

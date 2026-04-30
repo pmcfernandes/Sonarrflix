@@ -32,6 +32,14 @@ router.get('/player/:episodeId', async (req, res) => {
       sonarrFetch('series')
     ]);
     const mappedEpisode = mapEpisode(episode);
+    if (episodeFile && episodeFile.mediaInfo && episodeFile.mediaInfo.runTime) {
+      const parts = String(episodeFile.mediaInfo.runTime).split(':');
+      if (parts.length === 3) {
+        mappedEpisode.fileRuntime = (parseFloat(parts[0]) * 3600) + (parseFloat(parts[1]) * 60) + parseFloat(parts[2]);
+      }
+    }
+    const path = require('path');
+    mappedEpisode.canDirectPlay = ['.m4v', '.mp4', '.webm'].includes(path.extname(episodeFile.path).toLowerCase());
     const mappedSeries = mapSeries(series);
     const mappedEpisodes = episodes
       .map(mapEpisode)

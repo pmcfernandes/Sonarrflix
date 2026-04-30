@@ -276,6 +276,8 @@ button {
 }
 
 .poster-card {
+  display: grid;
+  align-content: start;
   border: 0;
   padding: 0;
   background: transparent;
@@ -543,6 +545,20 @@ button {
   line-height: 1;
 }
 
+.movie-player-layout {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'video'
+    'caption'
+    'suggestions';
+}
+
+.movie-player-layout .player-shell {
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .player-stage {
   display: grid;
   padding: 12px clamp(12px, 2vw, 28px) 20px;
@@ -765,6 +781,7 @@ button {
 
 .player-suggestion-card {
   display: grid;
+  grid-template-rows: max-content 1fr;
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 16px;

@@ -4,39 +4,47 @@ const { getSettings, saveSettings } = require('../helpers/database');
 
 const router = express.Router();
 
-async function testSonarrConnection(settings) {
-  const sonarrUrl = normalizeBaseUrl(settings.sonarrUrl);
-  const sonarrApiKey = String(settings.sonarrApiKey || '').trim();
+async function testAppConnection(settings, appName, urlKey, apiKeyKey) {
+  const appUrl = normalizeBaseUrl(settings[urlKey]);
+  const appApiKey = String(settings[apiKeyKey] || '').trim();
 
-  if (!sonarrUrl || !sonarrApiKey) {
+  if (!appUrl && !appApiKey) {
+    return { configured: false, ok: false, error: `${appName} is not configured.` };
+  }
+
+  if (!appUrl || !appApiKey) {
     return {
+      configured: false,
       ok: false,
-      error: 'Sonarr URL and API key are required.'
+      error: `${appName} URL and API key are required.`
     };
   }
 
   try {
-    const response = await fetch(`${sonarrUrl}/api/v3/system/status`, {
+    const response = await fetch(`${appUrl}/api/v3/system/status`, {
       signal: AbortSignal.timeout(5000),
       headers: {
         Accept: 'application/json',
-        'X-Api-Key': sonarrApiKey
+        'X-Api-Key': appApiKey
       }
     });
 
     if (!response.ok) {
       return {
+        configured: true,
         ok: false,
-        error: `Sonarr returned HTTP ${response.status}.`
+        error: `${appName} returned HTTP ${response.status}.`
       };
     }
 
     return {
+      configured: true,
       ok: true,
       status: await response.json()
     };
   } catch (error) {
     return {
+      configured: true,
       ok: false,
       error: error.message
     };
@@ -45,28 +53,40 @@ async function testSonarrConnection(settings) {
 
 router.get('/settings', async (_req, res) => {
   const settings = getSettings();
-  const connection = settings.configured
-    ? await testSonarrConnection(settings)
-    : { ok: false, error: 'Sonarr is not configured.' };
+  const [sonarrConnection, radarrConnection] = await Promise.all([
+    testAppConnection(settings, 'Sonarr', 'sonarrUrl', 'sonarrApiKey'),
+    testAppConnection(settings, 'Radarr', 'radarrUrl', 'radarrApiKey')
+  ]);
+  const connectionOk = sonarrConnection.ok || radarrConnection.ok;
 
   res.json({
     ...settings,
     sonarrUrl: settings.sonarrUrl || config.defaultSonarrUrl,
-    connectionOk: connection.ok,
-    connectionError: connection.ok ? '' : connection.error
+    radarrUrl: settings.radarrUrl || config.defaultRadarrUrl,
+    connectionOk,
+    connectionError: connectionOk ? '' : 'Configure Sonarr or Radarr to continue.',
+    sonarrConnectionOk: sonarrConnection.ok,
+    sonarrConnectionError: sonarrConnection.ok ? '' : sonarrConnection.error,
+    radarrConnectionOk: radarrConnection.ok,
+    radarrConnectionError: radarrConnection.ok ? '' : radarrConnection.error
   });
 });
 
 router.put('/settings', async (req, res) => {
   const settings = {
     sonarrUrl: String(req.body?.sonarrUrl || '').trim(),
-    sonarrApiKey: String(req.body?.sonarrApiKey || '').trim()
+    sonarrApiKey: String(req.body?.sonarrApiKey || '').trim(),
+    radarrUrl: String(req.body?.radarrUrl || '').trim(),
+    radarrApiKey: String(req.body?.radarrApiKey || '').trim()
   };
-  const connection = await testSonarrConnection(settings);
+  const [sonarrConnection, radarrConnection] = await Promise.all([
+    testAppConnection(settings, 'Sonarr', 'sonarrUrl', 'sonarrApiKey'),
+    testAppConnection(settings, 'Radarr', 'radarrUrl', 'radarrApiKey')
+  ]);
 
-  if (!connection.ok) {
+  if (!sonarrConnection.ok && !radarrConnection.ok) {
     res.status(400).json({
-      error: connection.error || 'Could not connect to Sonarr with these settings.'
+      error: sonarrConnection.configured ? sonarrConnection.error : radarrConnection.error
     });
     return;
   }
@@ -74,15 +94,32 @@ router.put('/settings', async (req, res) => {
   res.json({
     ...saveSettings(settings),
     connectionOk: true,
-    connectionError: ''
+    connectionError: '',
+    sonarrConnectionOk: sonarrConnection.ok,
+    sonarrConnectionError: sonarrConnection.ok ? '' : sonarrConnection.error,
+    radarrConnectionOk: radarrConnection.ok,
+    radarrConnectionError: radarrConnection.ok ? '' : radarrConnection.error
   });
 });
 
 router.post('/settings/test', async (req, res) => {
-  const connection = await testSonarrConnection({
+  const settings = {
     sonarrUrl: String(req.body?.sonarrUrl || '').trim(),
-    sonarrApiKey: String(req.body?.sonarrApiKey || '').trim()
-  });
+    sonarrApiKey: String(req.body?.sonarrApiKey || '').trim(),
+    radarrUrl: String(req.body?.radarrUrl || '').trim(),
+    radarrApiKey: String(req.body?.radarrApiKey || '').trim()
+  };
+  const [sonarrConnection, radarrConnection] = await Promise.all([
+    testAppConnection(settings, 'Sonarr', 'sonarrUrl', 'sonarrApiKey'),
+    testAppConnection(settings, 'Radarr', 'radarrUrl', 'radarrApiKey')
+  ]);
+  const connection = {
+    ok: sonarrConnection.ok || radarrConnection.ok,
+    sonarrConnectionOk: sonarrConnection.ok,
+    sonarrConnectionError: sonarrConnection.ok ? '' : sonarrConnection.error,
+    radarrConnectionOk: radarrConnection.ok,
+    radarrConnectionError: radarrConnection.ok ? '' : radarrConnection.error
+  };
 
   res.status(connection.ok ? 200 : 400).json(connection);
 });
