@@ -1,6 +1,6 @@
 import React from 'react';
 import { h } from './helpers/react.js';
-import { fetchCatalog, fetchEpisodes } from './helpers/api.js';
+import { fetchCatalog, fetchEpisodes, fetchSettings } from './helpers/api.js';
 import { buildCategoryList, filterSeries } from './helpers/catalog.js';
 import { plural } from './helpers/format.js';
 import { Header } from './components/Header.js';
@@ -8,6 +8,7 @@ import { Sidebar } from './components/Sidebar.js';
 import { EpisodesPage } from './pages/EpisodesPage.js';
 import { HomePage } from './pages/HomePage.js';
 import { PlayerPage } from './pages/PlayerPage.js';
+import { SettingsPage } from './pages/SettingsPage.js';
 import { SeriesPage } from './pages/SeriesPage.js';
 
 function getPlayerRoute() {
@@ -39,6 +40,7 @@ export function App() {
   const [notice, setNotice] = React.useState('');
   const [search, setSearch] = React.useState('');
   const [selectedSeries, setSelectedSeries] = React.useState(null);
+  const [settings, setSettings] = React.useState(null);
 
   const filtered = React.useMemo(
     () => filterSeries(catalog.series, catalog.categories, activeCategory, search),
@@ -50,13 +52,23 @@ export function App() {
   );
 
   React.useEffect(() => {
-    loadCatalog();
+    loadSettingsAndCatalog();
   }, []);
 
-  async function loadCatalog() {
+  async function loadSettingsAndCatalog() {
     setNotice('');
 
     try {
+      const loadedSettings = await fetchSettings();
+      setSettings(loadedSettings);
+
+      if (!loadedSettings.configured || !loadedSettings.connectionOk) {
+        setActiveView('settings');
+        setCatalog({ series: [], categories: [] });
+        setSelectedSeries(null);
+        return;
+      }
+
       const payload = await fetchCatalog();
       const nextCatalog = {
         series: payload.series || [],
@@ -88,8 +100,15 @@ export function App() {
     } catch (error) {
       setCatalog({ series: [], categories: [] });
       setSelectedSeries(null);
-      setNotice(`${error.message} Check SONARR_URL and SONARR_API_KEY in your .env file.`);
+      setActiveView('settings');
+      setNotice(error.message);
     }
+  }
+
+  function handleSettingsSaved(savedSettings) {
+    setSettings(savedSettings);
+    setActiveView('home');
+    loadSettingsAndCatalog();
   }
 
   async function openSeries(seriesId) {
@@ -135,6 +154,13 @@ export function App() {
   }
 
   function renderPage() {
+    if (activeView === 'settings') {
+      return h(SettingsPage, {
+        initialSettings: settings,
+        onSaved: handleSettingsSaved
+      });
+    }
+
     if (activeView === 'episodes') {
       return h(EpisodesPage, {
         ...episodeState,
@@ -174,26 +200,30 @@ export function App() {
       notice ? h('section', { className: 'notice', role: 'status' }, notice) : null,
       h(
         'section',
-        { className: 'layout' },
-        h(Sidebar, {
-          categories: categoryList,
-          activeCategory,
-          onCategoryChange: handleCategoryChange
-        }),
+        { className: `layout ${activeView === 'settings' ? 'settings-layout' : ''}` },
+        activeView === 'settings'
+          ? null
+          : h(Sidebar, {
+              categories: categoryList,
+              activeCategory,
+              onCategoryChange: handleCategoryChange
+            }),
         h(
           'section',
           { className: 'content' },
-          h(
-            'div',
-            { className: 'section-heading' },
-            h(
-              'div',
-              null,
-              h('p', { className: 'eyebrow' }, activeCategory),
-              h('h2', null, activeView === 'episodes' && selectedSeries ? selectedSeries.title : activeView === 'home' ? 'Browse' : 'Series')
-            ),
-            h('div', { className: 'counter' }, counter)
-          ),
+          activeView === 'settings'
+            ? null
+            : h(
+                'div',
+                { className: 'section-heading' },
+                h(
+                  'div',
+                  null,
+                  h('p', { className: 'eyebrow' }, activeCategory),
+                  h('h2', null, activeView === 'episodes' && selectedSeries ? selectedSeries.title : activeView === 'home' ? 'Browse' : 'Series')
+                ),
+                h('div', { className: 'counter' }, counter)
+              ),
           renderPage()
         )
       )

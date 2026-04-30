@@ -6,6 +6,7 @@ function normalizeBaseUrl(url) {
 
 const config = {
   port: Number(process.env.PORT || 3000),
+  databasePath: path.join(__dirname, '..', 'data', 'app.sqlite'),
   publicDir: path.join(__dirname, '..', 'public'),
   mediaPathMappings: String(process.env.MEDIA_PATH_MAPPINGS || '/media=Z:/')
     .split(';')
@@ -19,20 +20,20 @@ const config = {
       };
     })
     .filter((mapping) => mapping.from && mapping.to),
-  sonarrUrl: normalizeBaseUrl(process.env.SONARR_URL || 'http://localhost:8989'),
-  sonarrApiKey: process.env.SONARR_API_KEY || ''
+  defaultSonarrUrl: 'http://localhost:8989'
 };
 
-function requireSonarrConfig() {
-  if (!config.sonarrUrl || !config.sonarrApiKey.trim()) {
+function requireSonarrConfig(settings) {
+  if (!settings.sonarrUrl || !settings.sonarrApiKey.trim()) {
     const missing = [];
-    if (!config.sonarrUrl) missing.push('SONARR_URL');
-    if (!config.sonarrApiKey.trim()) missing.push('SONARR_API_KEY');
+    if (!settings.sonarrUrl) missing.push('Sonarr URL');
+    if (!settings.sonarrApiKey.trim()) missing.push('Sonarr API key');
     throw new Error(`Missing Sonarr configuration: ${missing.join(', ')}`);
   }
 }
 
 module.exports = {
   config,
+  normalizeBaseUrl,
   requireSonarrConfig
 };

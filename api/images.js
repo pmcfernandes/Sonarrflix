@@ -1,12 +1,11 @@
 const express = require('express');
-const { config, requireSonarrConfig } = require('../helpers/config');
-const { buildSonarrAssetUrl } = require('../helpers/sonarr');
+const { buildSonarrAssetUrl, getSonarrSettings } = require('../helpers/sonarr');
 
 const router = express.Router();
 
 router.get('/image', async (req, res) => {
   try {
-    requireSonarrConfig();
+    const settings = getSonarrSettings();
 
     const imagePath = String(req.query.path || '');
     if (!imagePath) {
@@ -16,7 +15,7 @@ router.get('/image', async (req, res) => {
 
     const response = await fetch(buildSonarrAssetUrl(imagePath), {
       headers: {
-        'X-Api-Key': config.sonarrApiKey
+        'X-Api-Key': settings.sonarrApiKey
       }
     });
 

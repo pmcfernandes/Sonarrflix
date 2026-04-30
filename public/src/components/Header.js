@@ -4,7 +4,8 @@ export function Header({ activeView, search, onHome, onSearch, onViewChange }) {
   const tabs = [
     ['home', 'Home'],
     ['series', 'Series'],
-    ['episodes', 'Episodes']
+    ['episodes', 'Episodes'],
+    ['settings', 'Settings']
   ];
 
   return h(

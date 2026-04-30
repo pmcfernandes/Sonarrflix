@@ -17,9 +17,10 @@ Create `.env` from `.env.example`:
 
 ```env
 PORT=3000
-SONARR_URL=http://localhost:8989
-SONARR_API_KEY=your_sonarr_api_key
+MEDIA_PATH_MAPPINGS=/media=Z:/
 ```
+
+Sonarr URL and API key are configured in the app Settings page and saved to SQLite at `data/app.sqlite`.
 
 Find the API key in Sonarr:
 
@@ -39,6 +40,8 @@ Open:
 ```text
 http://localhost:3000
 ```
+
+On first run, or when Sonarr cannot be reached with the saved settings, the app opens Settings instead of Home.
 
 ## Frontend Structure
 

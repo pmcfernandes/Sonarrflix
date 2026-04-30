@@ -152,7 +152,23 @@ export function PlayerPage({ episodeId }) {
           onClick: () => history.back(),
           'aria-label': 'Go back'
         },
-        h('span', { 'aria-hidden': 'true' }, '\u2039')
+        h(
+          'svg',
+          {
+            'aria-hidden': 'true',
+            fill: 'none',
+            height: '22',
+            viewBox: '0 0 24 24',
+            width: '22'
+          },
+          h('path', {
+            d: 'M19 12H5m0 0 6-6m-6 6 6 6',
+            stroke: 'currentColor',
+            strokeLinecap: 'round',
+            strokeLinejoin: 'round',
+            strokeWidth: '2.4'
+          })
+        )
       ),
       h(
         'div',

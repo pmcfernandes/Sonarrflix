@@ -1,13 +1,20 @@
-const { config, requireSonarrConfig } = require('./config');
+const { requireSonarrConfig } = require('./config');
+const { getSettings } = require('./database');
+
+function getSonarrSettings() {
+  const settings = getSettings();
+  requireSonarrConfig(settings);
+  return settings;
+}
 
 async function sonarrFetch(route, options = {}) {
-  requireSonarrConfig();
+  const settings = getSonarrSettings();
 
-  const response = await fetch(`${config.sonarrUrl}/api/v3/${route.replace(/^\/+/, '')}`, {
+  const response = await fetch(`${settings.sonarrUrl}/api/v3/${route.replace(/^\/+/, '')}`, {
     ...options,
     headers: {
       Accept: 'application/json',
-      'X-Api-Key': config.sonarrApiKey,
+      'X-Api-Key': settings.sonarrApiKey,
       ...(options.headers || {})
     }
   });
@@ -37,11 +44,13 @@ function buildSonarrAssetUrl(assetPath) {
     return assetPath;
   }
 
-  return `${config.sonarrUrl}${assetPath.startsWith('/') ? '' : '/'}${assetPath}`;
+  const settings = getSonarrSettings();
+  return `${settings.sonarrUrl}${assetPath.startsWith('/') ? '' : '/'}${assetPath}`;
 }
 
 module.exports = {
   buildSonarrAssetUrl,
+  getSonarrSettings,
   sonarrFetch,
   sonarrImageProxyUrl
 };

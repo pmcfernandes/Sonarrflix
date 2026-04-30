@@ -1,13 +1,15 @@
 const express = require('express');
-const { config } = require('../helpers/config');
+const { getSettings } = require('../helpers/database');
 
 const router = express.Router();
 
 router.get('/health', (_req, res) => {
+  const settings = getSettings();
+
   res.json({
     ok: true,
-    sonarrConfigured: Boolean(config.sonarrUrl && config.sonarrApiKey.trim()),
-    sonarrUrl: config.sonarrUrl
+    sonarrConfigured: settings.configured,
+    sonarrUrl: settings.sonarrUrl
   });
 });
 
