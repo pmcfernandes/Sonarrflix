@@ -470,9 +470,10 @@ button {
 .player-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-rows: auto auto auto;
   grid-template-areas:
     'video queue'
-    'caption queue'
+    'caption caption'
     'suggestions suggestions';
   gap: 12px 24px;
   width: 100%;
@@ -562,8 +563,10 @@ button {
 .player-sidebar {
   grid-area: queue;
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 12px;
-  height: 100%;
+  height: var(--player-height);
+  max-height: var(--player-height);
   min-height: 0;
   padding: 18px;
   border: 1px solid var(--line);
@@ -581,6 +584,7 @@ button {
 
 .player-season-list {
   display: grid;
+  align-content: start;
   gap: 10px;
   min-height: 0;
   overflow: auto;
@@ -798,6 +802,7 @@ button {
 
   .player-sidebar {
     height: auto;
+    max-height: none;
   }
 
   .player-suggestion-list {

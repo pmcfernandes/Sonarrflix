@@ -6,9 +6,11 @@ import { h } from '../helpers/react.js';
 
 export function PlayerPage({ episodeId }) {
   const playerRef = React.useRef(null);
+  const shellRef = React.useRef(null);
   const [captionScale, setCaptionScale] = React.useState(1);
   const [error, setError] = React.useState('');
   const [loading, setLoading] = React.useState(true);
+  const [playerHeight, setPlayerHeight] = React.useState('auto');
   const [playerData, setPlayerData] = React.useState(null);
 
   React.useEffect(() => {
@@ -93,6 +95,26 @@ export function PlayerPage({ episodeId }) {
     };
   }, [episodeId, playerData]);
 
+  React.useEffect(() => {
+    if (!shellRef.current) {
+      return undefined;
+    }
+
+    const updateHeight = () => {
+      setPlayerHeight(`${Math.round(shellRef.current.getBoundingClientRect().height)}px`);
+    };
+    const observer = new ResizeObserver(updateHeight);
+
+    updateHeight();
+    observer.observe(shellRef.current);
+    window.addEventListener('resize', updateHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, [playerData]);
+
   if (loading) {
     return h('main', { className: 'player-page' }, h('div', { className: 'player-status' }, 'Loading player...'));
   }
@@ -118,7 +140,7 @@ export function PlayerPage({ episodeId }) {
 
   return h(
     'main',
-    { className: 'player-page', style: { '--caption-scale': captionScale } },
+    { className: 'player-page', style: { '--caption-scale': captionScale, '--player-height': playerHeight } },
     h(
       'div',
       { className: 'player-topbar' },
@@ -147,7 +169,7 @@ export function PlayerPage({ episodeId }) {
         { className: 'player-layout' },
         h(
           'div',
-          { className: 'player-shell' },
+          { className: 'player-shell', ref: shellRef },
           h(
             'video',
             {
