@@ -6,6 +6,7 @@ const express = require('express');
 const appRoutes = require('./api/app');
 const healthRoutes = require('./api/health');
 const imageRoutes = require('./api/images');
+const playerRoutes = require('./api/player');
 const seriesRoutes = require('./api/series');
 const watchRoutes = require('./api/watch');
 const { config } = require('./helpers/config');
@@ -16,6 +17,7 @@ app.use(express.static(config.publicDir));
 app.use('/api', appRoutes);
 app.use('/api', healthRoutes);
 app.use('/api', imageRoutes);
+app.use('/api', playerRoutes);
 app.use('/api', seriesRoutes);
 app.use(watchRoutes);
 

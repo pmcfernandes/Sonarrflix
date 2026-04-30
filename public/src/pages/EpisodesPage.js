@@ -108,7 +108,8 @@ function EpisodeRow({ episode, onPlay }) {
         className: 'play-button',
         type: 'button',
         disabled: !episode.hasFile,
-        onClick: () => onPlay({ id: episode.id, title })
+        'aria-label': episode.hasFile ? `Play ${title}` : `Missing ${title}`,
+        onClick: () => onPlay({ id: episode.id, seriesId: episode.seriesId, title })
       },
       episode.hasFile ? 'Play' : 'Missing'
     )

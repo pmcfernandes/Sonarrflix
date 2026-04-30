@@ -4,19 +4,39 @@ import { fetchCatalog, fetchEpisodes } from './helpers/api.js';
 import { buildCategoryList, filterSeries } from './helpers/catalog.js';
 import { plural } from './helpers/format.js';
 import { Header } from './components/Header.js';
-import { PlayerDialog } from './components/PlayerDialog.js';
 import { Sidebar } from './components/Sidebar.js';
 import { EpisodesPage } from './pages/EpisodesPage.js';
 import { HomePage } from './pages/HomePage.js';
+import { PlayerPage } from './pages/PlayerPage.js';
 import { SeriesPage } from './pages/SeriesPage.js';
 
+function getPlayerRoute() {
+  const match = window.location.pathname.match(/^\/player\/(\d+)/);
+  if (!match) {
+    return null;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const title = params.get('title') || '';
+  const seriesId = params.get('seriesId') || '';
+  return {
+    episodeId: match[1],
+    title,
+    seriesId
+  };
+}
+
 export function App() {
+  const playerRoute = getPlayerRoute();
+  if (playerRoute) {
+    return h(PlayerPage, playerRoute);
+  }
+
   const [activeCategory, setActiveCategory] = React.useState('All Series');
   const [activeView, setActiveView] = React.useState('home');
   const [catalog, setCatalog] = React.useState({ series: [], categories: [] });
   const [episodeState, setEpisodeState] = React.useState({ loading: false, error: '', seasons: {} });
   const [notice, setNotice] = React.useState('');
-  const [playerEpisode, setPlayerEpisode] = React.useState(null);
   const [search, setSearch] = React.useState('');
   const [selectedSeries, setSelectedSeries] = React.useState(null);
 
@@ -44,7 +64,27 @@ export function App() {
       };
 
       setCatalog(nextCatalog);
-      setSelectedSeries(null);
+      const initialSeriesId = new URLSearchParams(window.location.search).get('seriesId');
+      const initialSeries = nextCatalog.series.find((item) => String(item.id) === String(initialSeriesId));
+
+      if (initialSeries) {
+        setSelectedSeries(initialSeries);
+        setActiveView('episodes');
+        setEpisodeState({ loading: true, error: '', seasons: {} });
+
+        try {
+          const episodePayload = await fetchEpisodes(initialSeries.id);
+          setEpisodeState({
+            loading: false,
+            error: '',
+            seasons: episodePayload.seasons || {}
+          });
+        } catch (episodeError) {
+          setEpisodeState({ loading: false, error: episodeError.message, seasons: {} });
+        }
+      } else {
+        setSelectedSeries(null);
+      }
     } catch (error) {
       setCatalog({ series: [], categories: [] });
       setSelectedSeries(null);
@@ -86,12 +126,20 @@ export function App() {
     }
   }
 
+  function openPlayerPage(episode) {
+    const params = new URLSearchParams({
+      title: episode.title,
+      seriesId: String(episode.seriesId)
+    });
+    window.location.assign(`/player/${episode.id}?${params.toString()}`);
+  }
+
   function renderPage() {
     if (activeView === 'episodes') {
       return h(EpisodesPage, {
         ...episodeState,
         series: selectedSeries,
-        onPlay: setPlayerEpisode
+        onPlay: openPlayerPage
       });
     }
 
@@ -149,7 +197,6 @@ export function App() {
           renderPage()
         )
       )
-    ),
-    h(PlayerDialog, { episode: playerEpisode, onClose: () => setPlayerEpisode(null) })
+    )
   );
 }

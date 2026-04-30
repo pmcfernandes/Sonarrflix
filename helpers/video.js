@@ -1,5 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+const { spawn } = require('child_process');
+const { TextDecoder } = require('util');
+const { config } = require('./config');
 
 const VIDEO_EXTENSIONS = new Set([
   '.avi',
@@ -9,6 +12,12 @@ const VIDEO_EXTENSIONS = new Set([
   '.mp4',
   '.mpeg',
   '.mpg',
+  '.webm'
+]);
+
+const DIRECT_PLAY_EXTENSIONS = new Set([
+  '.m4v',
+  '.mp4',
   '.webm'
 ]);
 
@@ -25,21 +34,183 @@ function getVideoContentType(filePath) {
   return 'application/octet-stream';
 }
 
+function canDirectPlay(filePath) {
+  return DIRECT_PLAY_EXTENSIONS.has(path.extname(filePath).toLowerCase());
+}
+
+function resolveVideoPath(filePath) {
+  const normalized = String(filePath || '').replace(/\\/g, '/');
+
+  for (const mapping of config.mediaPathMappings) {
+    if (normalized === mapping.from || normalized.startsWith(`${mapping.from}/`)) {
+      return normalized.replace(mapping.from, mapping.to).replace(/\//g, path.sep);
+    }
+  }
+
+  return filePath;
+}
+
+function getSubtitleLabel(filePath, videoPath) {
+  const videoBaseName = path.basename(videoPath, path.extname(videoPath));
+  const subtitleBaseName = path.basename(filePath, path.extname(filePath));
+  const suffix = subtitleBaseName.replace(videoBaseName, '').replace(/^[.\s_-]+/, '');
+
+  if (!suffix) {
+    return 'Default';
+  }
+
+  return suffix
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function listSubtitleTracks(videoPath, episodeId) {
+  const resolvedPath = resolveVideoPath(videoPath);
+  const directory = path.dirname(resolvedPath);
+  const videoBaseName = path.basename(resolvedPath, path.extname(resolvedPath));
+
+  try {
+    return fs.readdirSync(directory)
+      .filter((fileName) => path.extname(fileName).toLowerCase() === '.srt')
+      .filter((fileName) => path.basename(fileName, '.srt').startsWith(videoBaseName))
+      .map((fileName, index) => {
+        const filePath = path.join(directory, fileName);
+        const label = getSubtitleLabel(filePath, resolvedPath);
+
+        return {
+          id: index,
+          label,
+          srclang: label === 'Default' ? 'en' : label.slice(0, 2).toLowerCase(),
+          src: `/api/player/${episodeId}/subtitles/${index}`,
+          fileName
+        };
+      });
+  } catch (_error) {
+    return [];
+  }
+}
+
+function srtToVtt(srt) {
+  return `WEBVTT\n\n${String(srt || '')
+    .replace(/^\uFEFF/, '')
+    .replace(/\r+/g, '')
+    .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2')}`;
+}
+
+function decodeSubtitleBuffer(buffer) {
+  if (buffer.length >= 3 && buffer[0] === 0xef && buffer[1] === 0xbb && buffer[2] === 0xbf) {
+    return buffer.toString('utf8');
+  }
+
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(buffer);
+  } catch (_error) {
+    return new TextDecoder('windows-1252').decode(buffer);
+  }
+}
+
+function streamSubtitle(req, res, videoPath, subtitleId) {
+  const resolvedPath = resolveVideoPath(videoPath);
+  const tracks = listSubtitleTracks(resolvedPath, req.params.episodeId);
+  const track = tracks.find((item) => item.id === Number(subtitleId));
+
+  if (!track) {
+    res.status(404).json({ error: 'Subtitle track not found.' });
+    return;
+  }
+
+  const subtitlePath = path.join(path.dirname(resolvedPath), track.fileName);
+  fs.readFile(subtitlePath, (error, content) => {
+    if (error) {
+      res.status(404).json({ error: 'Subtitle file could not be read.' });
+      return;
+    }
+
+    const decodedContent = decodeSubtitleBuffer(content);
+    res.setHeader('Content-Type', 'text/vtt; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.end(srtToVtt(decodedContent), 'utf8');
+  });
+}
+
+function streamTranscodedVideo(req, res, filePath) {
+  const ffmpeg = spawn('ffmpeg', [
+    '-hide_banner',
+    '-loglevel', 'error',
+    '-ss', '0',
+    '-i', filePath,
+    '-map', '0:v:0',
+    '-map', '0:a?',
+    '-c:v', 'libx264',
+    '-preset', 'veryfast',
+    '-crf', '23',
+    '-c:a', 'aac',
+    '-b:a', '160k',
+    '-movflags', 'frag_keyframe+empty_moov+default_base_moof',
+    '-f', 'mp4',
+    'pipe:1'
+  ], {
+    windowsHide: true,
+    stdio: ['ignore', 'pipe', 'pipe']
+  });
+
+  let stderr = '';
+
+  ffmpeg.stderr.on('data', (chunk) => {
+    stderr += chunk.toString();
+  });
+
+  ffmpeg.once('error', () => {
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'ffmpeg is not available to transcode this episode.' });
+    }
+  });
+
+  ffmpeg.once('spawn', () => {
+    res.writeHead(200, {
+      'Content-Type': 'video/mp4',
+      'Transfer-Encoding': 'chunked',
+      'Accept-Ranges': 'none',
+      'Cache-Control': 'no-store'
+    });
+  });
+
+  req.on('close', () => {
+    ffmpeg.kill('SIGKILL');
+  });
+
+  ffmpeg.stdout.pipe(res);
+
+  ffmpeg.once('close', (code) => {
+    if (code !== 0 && !res.headersSent) {
+      res.status(500).json({ error: stderr.trim() || 'ffmpeg could not transcode this episode.' });
+    }
+  });
+}
+
 function streamVideo(req, res, filePath) {
-  const ext = path.extname(filePath).toLowerCase();
+  const resolvedPath = resolveVideoPath(filePath);
+  const ext = path.extname(resolvedPath).toLowerCase();
   if (!VIDEO_EXTENSIONS.has(ext)) {
     res.status(415).json({ error: 'The episode file is not a supported browser video format.' });
     return;
   }
 
-  fs.stat(filePath, (statError, stat) => {
+  fs.stat(resolvedPath, (statError, stat) => {
     if (statError || !stat.isFile()) {
       res.status(404).json({ error: 'The episode file could not be read from this server.' });
       return;
     }
 
+    if (!canDirectPlay(resolvedPath)) {
+      streamTranscodedVideo(req, res, resolvedPath);
+      return;
+    }
+
     const range = req.headers.range;
-    const contentType = getVideoContentType(filePath);
+    const contentType = getVideoContentType(resolvedPath);
 
     if (!range) {
       res.writeHead(200, {
@@ -47,7 +218,7 @@ function streamVideo(req, res, filePath) {
         'Content-Type': contentType,
         'Accept-Ranges': 'bytes'
       });
-      fs.createReadStream(filePath).pipe(res);
+      fs.createReadStream(resolvedPath).pipe(res);
       return;
     }
 
@@ -68,10 +239,13 @@ function streamVideo(req, res, filePath) {
       'Content-Type': contentType
     });
 
-    fs.createReadStream(filePath, { start, end }).pipe(res);
+    fs.createReadStream(resolvedPath, { start, end }).pipe(res);
   });
 }
 
 module.exports = {
+  listSubtitleTracks,
+  resolveVideoPath,
+  streamSubtitle,
   streamVideo
 };

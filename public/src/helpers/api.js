@@ -16,3 +16,7 @@ export function fetchCatalog() {
 export function fetchEpisodes(seriesId) {
   return requestJson(`/api/series/${seriesId}/episodes`);
 }
+
+export function fetchPlayer(episodeId) {
+  return requestJson(`/api/player/${episodeId}`);
+}
