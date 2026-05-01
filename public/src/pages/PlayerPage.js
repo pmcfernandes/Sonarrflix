@@ -4,6 +4,7 @@ import { fetchMoviePlayer, fetchPlayer } from '../helpers/api.js';
 import { episodeCode } from '../helpers/format.js';
 import { h } from '../helpers/react.js';
 import { Spinner } from '../components/Spinner.js';
+import { CastCrew } from '../components/CastCrew.js';
 
 export function PlayerPage({ episodeId, movieId, type = 'episode' }) {
   const playerRef = React.useRef(null);
@@ -230,50 +231,50 @@ export function PlayerPage({ episodeId, movieId, type = 'episode' }) {
         ),
         !isMovie && seasonEpisodes.length
           ? h(
-              'aside',
-              { className: 'player-sidebar' },
-              h('h2', null, 'Season Episodes'),
-              h(
-                'div',
-                { className: 'player-season-list' },
-                seasonEpisodes.map((seasonEpisode) =>
+            'aside',
+            { className: 'player-sidebar' },
+            h('h2', null, 'Season Episodes'),
+            h(
+              'div',
+              { className: 'player-season-list' },
+              seasonEpisodes.map((seasonEpisode) =>
+                h(
+                  'button',
+                  {
+                    key: seasonEpisode.id,
+                    className: `player-season-item ${String(seasonEpisode.id) === String(episode.id) ? 'active' : ''} ${seasonEpisode.hasFile ? '' : 'locked'}`,
+                    type: 'button',
+                    disabled: !seasonEpisode.hasFile,
+                    onClick: () => openEpisode(seasonEpisode)
+                  },
+                  h('span', { className: 'player-season-code' }, episodeCode(seasonEpisode)),
+                  h('strong', { className: 'player-season-title' }, seasonEpisode.title),
                   h(
-                    'button',
-                    {
-                      key: seasonEpisode.id,
-                      className: `player-season-item ${String(seasonEpisode.id) === String(episode.id) ? 'active' : ''} ${seasonEpisode.hasFile ? '' : 'locked'}`,
-                      type: 'button',
-                      disabled: !seasonEpisode.hasFile,
-                      onClick: () => openEpisode(seasonEpisode)
-                    },
-                    h('span', { className: 'player-season-code' }, episodeCode(seasonEpisode)),
-                    h('strong', { className: 'player-season-title' }, seasonEpisode.title),
-                    h(
-                      'span',
-                      { className: 'player-season-description' },
-                      seasonEpisode.overview || seasonEpisode.airDate || (seasonEpisode.hasFile ? 'Ready to play.' : 'Missing episode file.')
-                    )
+                    'span',
+                    { className: 'player-season-description' },
+                    seasonEpisode.overview || seasonEpisode.airDate || (seasonEpisode.hasFile ? 'Ready to play.' : 'Missing episode file.')
                   )
                 )
               )
             )
+          )
           : null,
         (isMovie ? suggestedMovies : suggestedSeries).length
           ? h(
-              'section',
-              { className: 'player-suggestions' },
-              h('p', { className: 'eyebrow' }, 'Based on categories'),
-              h('h2', null, isMovie ? 'Suggested movies' : 'Suggested series'),
-              h(
-                'div',
-                { className: 'player-suggestion-list' },
-                (isMovie ? suggestedMovies : suggestedSeries).map((suggestion) => h(SuggestionCard, {
-                  key: suggestion.id,
-                  series: suggestion,
-                  onOpen: isMovie ? openMovie : openSeries
-                }))
-              )
+            'section',
+            { className: 'player-suggestions' },
+            h('p', { className: 'eyebrow' }, 'Based on categories'),
+            h('h2', null, isMovie ? 'Suggested movies' : 'Suggested series'),
+            h(
+              'div',
+              { className: 'player-suggestion-list' },
+              (isMovie ? suggestedMovies : suggestedSeries).map((suggestion) => h(SuggestionCard, {
+                key: suggestion.id,
+                series: suggestion,
+                onOpen: isMovie ? openMovie : openSeries
+              }))
             )
+          )
           : null
       )
     )

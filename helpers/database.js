@@ -33,13 +33,15 @@ function getSettings() {
   const sonarrApiKey = getSetting('sonarrApiKey');
   const radarrUrl = normalizeBaseUrl(getSetting('radarrUrl'));
   const radarrApiKey = getSetting('radarrApiKey');
+  const tvdbApiKey = getSetting('tvdbApiKey');
 
   return {
     configured: Boolean((sonarrUrl && sonarrApiKey.trim()) || (radarrUrl && radarrApiKey.trim())),
     sonarrUrl,
     sonarrApiKey,
     radarrUrl,
-    radarrApiKey
+    radarrApiKey,
+    tvdbApiKey
   };
 }
 
@@ -48,6 +50,7 @@ function saveSettings(settings) {
   setSetting('sonarrApiKey', settings.sonarrApiKey);
   setSetting('radarrUrl', normalizeBaseUrl(settings.radarrUrl));
   setSetting('radarrApiKey', settings.radarrApiKey);
+  setSetting('tvdbApiKey', settings.tvdbApiKey);
   return getSettings();
 }
 

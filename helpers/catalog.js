@@ -45,6 +45,7 @@ function mapSeries(series) {
     previousAiring: series.previousAiring || null,
     rating: Number(series.ratings?.value || 0),
     certification: series.certification || '',
+    tvdbId: series.tvdbId || null,
     path: series.path || '',
     poster: images.poster,
     backdrop: images.backdrop
@@ -150,6 +151,9 @@ function mapMovie(movie) {
     fileRuntime: parseRunTime(movie.movieFile?.mediaInfo?.runTime) || movie.runtime * 60 || 0,
     rating: Number(movie.ratings?.value || 0),
     certification: movie.certification || '',
+    tmdbId: movie.tmdbId || null,
+    imdbId: movie.imdbId || '',
+    tvdbId: movie.tvdbId || null,
     path: movie.path || '',
     poster: images.poster,
     backdrop: images.backdrop

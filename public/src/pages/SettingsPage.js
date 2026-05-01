@@ -7,7 +7,8 @@ export function SettingsPage({ initialSettings, onSaved }) {
     sonarrUrl: initialSettings?.sonarrUrl || 'http://localhost:8989',
     sonarrApiKey: initialSettings?.sonarrApiKey || '',
     radarrUrl: initialSettings?.radarrUrl || 'http://localhost:7878',
-    radarrApiKey: initialSettings?.radarrApiKey || ''
+    radarrApiKey: initialSettings?.radarrApiKey || '',
+    tvdbApiKey: initialSettings?.tvdbApiKey || ''
   });
   const [message, setMessage] = React.useState(initialSettings?.connectionError || '');
   const [saving, setSaving] = React.useState(false);
@@ -18,7 +19,8 @@ export function SettingsPage({ initialSettings, onSaved }) {
       sonarrUrl: initialSettings?.sonarrUrl || 'http://localhost:8989',
       sonarrApiKey: initialSettings?.sonarrApiKey || '',
       radarrUrl: initialSettings?.radarrUrl || 'http://localhost:7878',
-      radarrApiKey: initialSettings?.radarrApiKey || ''
+      radarrApiKey: initialSettings?.radarrApiKey || '',
+      tvdbApiKey: initialSettings?.tvdbApiKey || ''
     });
     setMessage(initialSettings?.connectionError || '');
   }, [initialSettings]);
@@ -111,6 +113,18 @@ export function SettingsPage({ initialSettings, onSaved }) {
         })
       ),
       message ? h('div', { className: 'settings-message', role: 'status' }, message) : null,
+      h('p', { className: 'eyebrow', style: { marginTop: '16px' } }, 'TheTVDB (Cast & Crew)'),
+      h(
+        'label',
+        { className: 'settings-field' },
+        h('span', null, 'TVDB API key'),
+        h('input', {
+          type: 'password',
+          value: form.tvdbApiKey,
+          placeholder: 'Optional — enables cast & crew info',
+          onChange: (event) => updateField('tvdbApiKey', event.target.value)
+        })
+      ),
       h(
         'div',
         { className: 'settings-actions' },

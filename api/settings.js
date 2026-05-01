@@ -1,6 +1,7 @@
 const express = require('express');
 const { config, normalizeBaseUrl } = require('../helpers/config');
 const { getSettings, saveSettings } = require('../helpers/database');
+const { testTvdbConnection } = require('../helpers/tvdb');
 
 const router = express.Router();
 
@@ -53,11 +54,13 @@ async function testAppConnection(settings, appName, urlKey, apiKeyKey) {
 
 router.get('/settings', async (_req, res) => {
   const settings = getSettings();
-  const [sonarrConnection, radarrConnection] = await Promise.all([
+  const [sonarrConnection, radarrConnection, tvdbConnection] = await Promise.all([
     testAppConnection(settings, 'Sonarr', 'sonarrUrl', 'sonarrApiKey'),
-    testAppConnection(settings, 'Radarr', 'radarrUrl', 'radarrApiKey')
+    testAppConnection(settings, 'Radarr', 'radarrUrl', 'radarrApiKey'),
+    settings.tvdbApiKey ? testTvdbConnection(settings.tvdbApiKey) : Promise.resolve({ ok: true })
   ]);
   const connectionOk = sonarrConnection.ok || radarrConnection.ok;
+  const tvdbOk = tvdbConnection.ok;
 
   res.json({
     ...settings,
@@ -68,7 +71,9 @@ router.get('/settings', async (_req, res) => {
     sonarrConnectionOk: sonarrConnection.ok,
     sonarrConnectionError: sonarrConnection.ok ? '' : sonarrConnection.error,
     radarrConnectionOk: radarrConnection.ok,
-    radarrConnectionError: radarrConnection.ok ? '' : radarrConnection.error
+    radarrConnectionError: radarrConnection.ok ? '' : radarrConnection.error,
+    tvdbConnectionOk: tvdbOk,
+    tvdbConnectionError: tvdbOk ? '' : tvdbConnection.error
   });
 });
 
@@ -77,11 +82,13 @@ router.put('/settings', async (req, res) => {
     sonarrUrl: String(req.body?.sonarrUrl || '').trim(),
     sonarrApiKey: String(req.body?.sonarrApiKey || '').trim(),
     radarrUrl: String(req.body?.radarrUrl || '').trim(),
-    radarrApiKey: String(req.body?.radarrApiKey || '').trim()
+    radarrApiKey: String(req.body?.radarrApiKey || '').trim(),
+    tvdbApiKey: String(req.body?.tvdbApiKey || '').trim()
   };
-  const [sonarrConnection, radarrConnection] = await Promise.all([
+  const [sonarrConnection, radarrConnection, tvdbConnection] = await Promise.all([
     testAppConnection(settings, 'Sonarr', 'sonarrUrl', 'sonarrApiKey'),
-    testAppConnection(settings, 'Radarr', 'radarrUrl', 'radarrApiKey')
+    testAppConnection(settings, 'Radarr', 'radarrUrl', 'radarrApiKey'),
+    settings.tvdbApiKey ? testTvdbConnection(settings.tvdbApiKey) : Promise.resolve({ ok: true })
   ]);
 
   if (!sonarrConnection.ok && !radarrConnection.ok) {
@@ -107,7 +114,8 @@ router.post('/settings/test', async (req, res) => {
     sonarrUrl: String(req.body?.sonarrUrl || '').trim(),
     sonarrApiKey: String(req.body?.sonarrApiKey || '').trim(),
     radarrUrl: String(req.body?.radarrUrl || '').trim(),
-    radarrApiKey: String(req.body?.radarrApiKey || '').trim()
+    radarrApiKey: String(req.body?.radarrApiKey || '').trim(),
+    tvdbApiKey: String(req.body?.tvdbApiKey || '').trim()
   };
   const [sonarrConnection, radarrConnection] = await Promise.all([
     testAppConnection(settings, 'Sonarr', 'sonarrUrl', 'sonarrApiKey'),

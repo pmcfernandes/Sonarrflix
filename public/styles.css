@@ -424,6 +424,147 @@ button {
   -webkit-box-orient: vertical;
 }
 
+/* Cast & Crew */
+.cast-crew {
+  display: grid;
+  gap: 32px;
+  margin: 24px 0 40px;
+  animation: cast-fade-in 0.6s ease out;
+}
+
+@keyframes cast-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cast-section {
+  display: grid;
+  gap: 18px;
+}
+
+.cast-section-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.cast-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 130px;
+  gap: 20px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--panel-soft) transparent;
+}
+
+.cast-rail::-webkit-scrollbar {
+  height: 6px;
+}
+
+.cast-rail::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cast-rail::-webkit-scrollbar-thumb {
+  background: var(--panel-soft);
+  border-radius: 10px;
+}
+
+.cast-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  width: 130px;
+}
+
+.cast-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--panel-soft);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+}
+
+.cast-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+.cast-card:hover .cast-avatar img {
+  transform: scale(1.12);
+}
+
+.cast-avatar-fallback {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--subtle);
+}
+
+.cast-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cast-role {
+  font-size: 13px;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+@media (max-width: 768px) {
+  .cast-crew {
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  .cast-section-title {
+    font-size: 18px;
+  }
+  .cast-rail {
+    grid-auto-columns: 110px;
+    gap: 14px;
+  }
+  .cast-card {
+    width: 110px;
+  }
+  .cast-avatar {
+    width: 84px;
+    height: 84px;
+  }
+  .cast-name {
+    font-size: 13px;
+  }
+  .cast-role {
+    font-size: 11px;
+  }
+}
+
 .episode.locked .play-button {
   background: var(--panel-soft);
   color: var(--subtle);

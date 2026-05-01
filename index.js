@@ -11,6 +11,7 @@ const movieRoutes = require('./api/movies');
 const playerRoutes = require('./api/player');
 const seriesRoutes = require('./api/series');
 const settingsRoutes = require('./api/settings');
+const tvdbRoutes = require('./api/tvdb');
 const watchRoutes = require('./api/watch');
 const { config } = require('./helpers/config');
 
@@ -26,6 +27,7 @@ app.use('/api', movieRoutes);
 app.use('/api', playerRoutes);
 app.use('/api', seriesRoutes);
 app.use('/api', settingsRoutes);
+app.use('/api', tvdbRoutes);
 app.use(watchRoutes);
 
 app.get(/.*/, (_req, res) => {

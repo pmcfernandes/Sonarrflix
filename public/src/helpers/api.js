@@ -57,3 +57,11 @@ export function saveSettings(settings) {
 export function testSettings(settings) {
   return sendJson('/api/settings/test', 'POST', settings);
 }
+
+export function fetchSeriesPeople(tvdbId) {
+  return requestJson(`/api/tvdb/series/${tvdbId}/people`);
+}
+
+export function fetchMoviePeople(tvdbId) {
+  return requestJson(`/api/tvdb/movie/${tvdbId}/people`);
+}

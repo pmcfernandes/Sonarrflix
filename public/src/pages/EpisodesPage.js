@@ -1,6 +1,7 @@
 import { h } from '../helpers/react.js';
 import { episodeCode, plural } from '../helpers/format.js';
 import { Spinner } from '../components/Spinner.js';
+import { CastCrew } from '../components/CastCrew.js';
 
 export function EpisodesPage({ error, loading, seasons, series, onPlay }) {
   if (!series) {
@@ -23,6 +24,7 @@ export function EpisodesPage({ error, loading, seasons, series, onPlay }) {
     'div',
     { className: 'episode-view' },
     h(SeriesDetail, { series }),
+    series.tvdbId || series.imdbId ? h(CastCrew, { id: series.tvdbId || series.imdbId, type: 'series' }) : null,
     seasonNumbers.map((seasonNumber) => h(Season, {
       key: seasonNumber,
       seasonNumber,
