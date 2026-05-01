@@ -3,6 +3,7 @@ import Plyr from 'plyr';
 import { fetchMoviePlayer, fetchPlayer } from '../helpers/api.js';
 import { episodeCode } from '../helpers/format.js';
 import { h } from '../helpers/react.js';
+import { Spinner } from '../components/Spinner.js';
 
 export function PlayerPage({ episodeId, movieId, type = 'episode' }) {
   const playerRef = React.useRef(null);
@@ -122,7 +123,7 @@ export function PlayerPage({ episodeId, movieId, type = 'episode' }) {
   }, [playerData]);
 
   if (loading) {
-    return h('main', { className: 'player-page' }, h('div', { className: 'player-status' }, 'Loading player...'));
+    return h('main', { className: 'player-page' }, h(Spinner, { label: 'Loading player' }));
   }
 
   if (error) {

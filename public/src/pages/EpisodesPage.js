@@ -1,5 +1,6 @@
 import { h } from '../helpers/react.js';
 import { episodeCode, plural } from '../helpers/format.js';
+import { Spinner } from '../components/Spinner.js';
 
 export function EpisodesPage({ error, loading, seasons, series, onPlay }) {
   if (!series) {
@@ -7,7 +8,7 @@ export function EpisodesPage({ error, loading, seasons, series, onPlay }) {
   }
 
   if (loading) {
-    return h('div', { className: 'notice' }, 'Loading episodes...');
+    return h(Spinner, { label: 'Loading episodes' });
   }
 
   if (error) {

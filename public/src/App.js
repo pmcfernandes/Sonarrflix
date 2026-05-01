@@ -5,6 +5,7 @@ import { buildCategoryList, filterMovies, filterSeries } from './helpers/catalog
 import { plural } from './helpers/format.js';
 import { Header } from './components/Header.js';
 import { Sidebar } from './components/Sidebar.js';
+import { Spinner } from './components/Spinner.js';
 import { EpisodesPage } from './pages/EpisodesPage.js';
 import { HomePage } from './pages/HomePage.js';
 import { MoviesPage } from './pages/MoviesPage.js';
@@ -48,6 +49,7 @@ export function App() {
   const [catalog, setCatalog] = React.useState({ series: [], categories: [] });
   const [movieCatalog, setMovieCatalog] = React.useState({ movies: [], categories: [] });
   const [episodeState, setEpisodeState] = React.useState({ loading: false, error: '', seasons: {} });
+  const [catalogLoading, setCatalogLoading] = React.useState(true);
   const [notice, setNotice] = React.useState('');
   const [search, setSearch] = React.useState('');
   const [selectedSeries, setSelectedSeries] = React.useState(null);
@@ -64,10 +66,10 @@ export function App() {
   const categoryList = React.useMemo(
     () => activeView === 'movies'
       ? [
-          { name: 'All Movies', count: movieCatalog.movies.length },
-          { name: 'Available to Watch', count: movieCatalog.movies.filter((item) => item.hasFile).length },
-          ...movieCatalog.categories.map((category) => ({ name: category.name, count: category.count || category.items.length }))
-        ].filter((category, index, list) => list.findIndex((item) => item.name === category.name) === index)
+        { name: 'All Movies', count: movieCatalog.movies.length },
+        { name: 'Available to Watch', count: movieCatalog.movies.filter((item) => item.hasFile).length },
+        ...movieCatalog.categories.map((category) => ({ name: category.name, count: category.count || category.items.length }))
+      ].filter((category, index, list) => list.findIndex((item) => item.name === category.name) === index)
       : buildCategoryList(catalog.series, catalog.categories),
     [activeView, catalog, movieCatalog]
   );
@@ -77,6 +79,7 @@ export function App() {
   }, []);
 
   async function loadSettingsAndCatalog() {
+    setCatalogLoading(true);
     setNotice('');
 
     try {
@@ -87,6 +90,7 @@ export function App() {
         setActiveView('settings');
         setCatalog({ series: [], categories: [] });
         setSelectedSeries(null);
+        setCatalogLoading(false);
         return;
       }
 
@@ -104,6 +108,7 @@ export function App() {
         movies: moviePayload.movies || [],
         categories: moviePayload.categories || []
       });
+      setCatalogLoading(false);
       if (!loadedSettings.sonarrConnectionOk && loadedSettings.radarrConnectionOk) {
         setActiveView('movies');
         setActiveCategory('All Movies');
@@ -134,6 +139,7 @@ export function App() {
       setSelectedSeries(null);
       setActiveView('settings');
       setNotice(error.message);
+      setCatalogLoading(false);
     }
   }
 
@@ -227,6 +233,10 @@ export function App() {
       return h(MoviesPage, { movies: filteredMovies, onOpenMovie: openMoviePlayer });
     }
 
+    if (catalogLoading) {
+      return h(Spinner, { label: 'Loading catalog' });
+    }
+
     return h(HomePage, {
       categories: catalog.categories,
       series: catalog.series,
@@ -238,7 +248,7 @@ export function App() {
     ? plural(selectedSeries.episodeFileCount, 'available episode')
     : activeView === 'movies'
       ? plural(filteredMovies.length, 'movie')
-    : plural(filtered.length, 'series', 'series');
+      : plural(filtered.length, 'series', 'series');
 
   return h(
     React.Fragment,
@@ -260,26 +270,26 @@ export function App() {
         activeView === 'settings'
           ? null
           : h(Sidebar, {
-              categories: categoryList,
-              activeCategory,
-              onCategoryChange: handleCategoryChange
-            }),
+            categories: categoryList,
+            activeCategory,
+            onCategoryChange: handleCategoryChange
+          }),
         h(
           'section',
           { className: 'content' },
           activeView === 'settings'
             ? null
             : h(
+              'div',
+              { className: 'section-heading' },
+              h(
                 'div',
-                { className: 'section-heading' },
-                h(
-                  'div',
-                  null,
-                  h('p', { className: 'eyebrow' }, activeCategory),
-                  h('h2', null, activeView === 'episodes' && selectedSeries ? selectedSeries.title : activeView === 'movies' ? 'Movies' : activeView === 'home' ? 'Browse' : 'Series')
-                ),
-                h('div', { className: 'counter' }, counter)
+                null,
+                h('p', { className: 'eyebrow' }, activeCategory),
+                h('h2', null, activeView === 'episodes' && selectedSeries ? selectedSeries.title : activeView === 'movies' ? 'Movies' : activeView === 'home' ? 'Browse' : 'Series')
               ),
+              h('div', { className: 'counter' }, counter)
+            ),
           renderPage()
         )
       )
